@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Installment" ADD COLUMN     "deleted" BOOLEAN NOT NULL DEFAULT false;
