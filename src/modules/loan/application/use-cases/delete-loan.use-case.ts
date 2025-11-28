@@ -23,10 +23,11 @@ export class DeleteLoanByIdUseCase {
     if (loan.userId !== lenderId) {
       throw new UnauthorizedException("u can't delete this loan");
     }
-    if (loan.payments.length > 0) {
-      // Validar que no tenga pagos asociados
+    // Validar que no tenga pagos activos (no eliminados) asociados
+    const activePayments = loan.payments.filter((payment) => !payment.deleted);
+    if (activePayments.length > 0) {
       throw new BadRequestException(
-        'Cannot delete loan with associated payments',
+        'Cannot delete loan with associated active payments',
       );
     }
 
