@@ -18,7 +18,14 @@ export class LoanRepository implements ILoanRepository {
     lenderId: string,
     paginationDto: PaginationDto,
   ): Promise<Loan[] | null> {
-    const { page = 1, limit = 10, status, dateInit, dateEnd } = paginationDto;
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      dateInit,
+      dateEnd,
+      search,
+    } = paginationDto;
 
     // Construir filtros dinámicos
     const where: {
@@ -28,6 +35,14 @@ export class LoanRepository implements ILoanRepository {
       createdAt?: {
         gte?: Date;
         lte?: Date;
+      };
+      debtor?: {
+        OR?: Array<{
+          firstName?: { contains: string; mode?: 'insensitive' };
+          lastName?: { contains: string; mode?: 'insensitive' };
+          email?: { contains: string; mode?: 'insensitive' };
+        }>;
+        deleted: boolean;
       };
     } = {
       userId: lenderId,
@@ -48,6 +63,38 @@ export class LoanRepository implements ILoanRepository {
       if (dateEnd) {
         where.createdAt.lte = new Date(dateEnd);
       }
+    }
+
+    // Filtro de búsqueda por nombre o correo del deudor
+    if (search && search.trim()) {
+      where.debtor = {
+        deleted: false,
+        OR: [
+          {
+            firstName: {
+              contains: search.trim(),
+              mode: 'insensitive',
+            },
+          },
+          {
+            lastName: {
+              contains: search.trim(),
+              mode: 'insensitive',
+            },
+          },
+          {
+            email: {
+              contains: search.trim(),
+              mode: 'insensitive',
+            },
+          },
+        ],
+      };
+    } else {
+      // Si no hay búsqueda, solo filtrar por deudores no eliminados
+      where.debtor = {
+        deleted: false,
+      };
     }
 
     return await this.prismaService.loan.findMany({
